@@ -1,0 +1,20 @@
+pipeline {
+  agent any
+  stages {
+    stage ('Build') {
+      steps {
+        bat 'printenv'
+      }
+    }
+    stage {
+      steps {
+        withEnv (["AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}","AWS_SECRET_KEY_ID=${env.AWS_SECRET_KEY_ID}","AWS_REGION=${env.AWS_REGION}"]){
+          bat 'docker login -u AWS -p $((Get-ECRLoginCommand).Password) 011242188485.dkr.ecr.us-east-2.amazonaws.com'
+          bat 'docker build -t csbssi .'
+          bat 'docker tag csbssi:latest 011242188485.dkr.ecr.us-east-2.amazonaws.com/csbssi:latest'
+          bat 'docker push 011242188485.dkr.ecr.us-east-2.amazonaws.com/csbssi:latest'
+        }
+      }
+    }
+  }
+}
