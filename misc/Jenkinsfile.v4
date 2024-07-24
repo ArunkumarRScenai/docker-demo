@@ -1,0 +1,25 @@
+node {
+   def commit_id
+   stage('Preparation') {
+     checkout scm
+     bat "git rev-parse --short HEAD > .git/commit-id"                        
+     commit_id = readFile('.git/commit-id').trim()
+   }
+   stage('test') {
+     nodejs(nodeJSInstallationName: 'Nodejs_V20') {
+       bat 'npm install --only=dev'
+       bat 'npm test'
+     }
+   }
+   stage('docker build/push') {
+     // docker.withRegistry('https://index.docker.io/v2/', '8823705b-5ceb-4ff9-b345-606fe1f4fd4b') {
+     //   def app = docker.build("arunkumarrajan/docker-nodejs-demo:${commit_id}", '.').push()
+     // }
+        withEnv (["AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}","AWS_SECRET_KEY_ID=${env.AWS_SECRET_KEY_ID}","AWS_REGION=${env.AWS_REGION}"]){
+          bat 'docker login -u AWS -p $((Get-ECRLoginCommand).Password) 011242188485.dkr.ecr.us-east-2.amazonaws.com'
+          bat 'docker build -t csbssi .'
+          bat 'docker tag csbssi:latest 011242188485.dkr.ecr.us-east-2.amazonaws.com/csbssi:latest'
+          bat 'docker push 011242188485.dkr.ecr.us-east-2.amazonaws.com/csbssi:latest'
+        }
+   }
+}
